@@ -1,0 +1,19 @@
+{
+  "files.associations": {
+    "*.toml": "toml",
+    "__config": "cpp",
+    "__availability": "cpp",
+    "condition_variable": "cpp",
+    "memory": "cpp",
+    "ostream": "cpp",
+    "regex": "cpp",
+    "string": "cpp",
+    "__locale": "cpp",
+    "bitset": "cpp",
+    "filesystem": "cpp",
+    "iomanip": "cpp",
+    "istream": "cpp",
+    "locale": "cpp",
+    "sstream": "cpp"
+  }
+}
