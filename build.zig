@@ -40,6 +40,9 @@ pub fn build(b: *std.Build) void {
     lib.linkSystemLibrary("duckdb");
     lib.addLibraryPath(b.path("lib"));
 
+    // resolve memory zls issue
+    //lib.addIncludePath(b.path("/usr/share"));
+
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when
     // running `zig build`).
