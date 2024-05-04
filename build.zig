@@ -65,6 +65,22 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    // duckdb headers
+    main_tests.addIncludePath(b.path("duckdb/src/include"));
+    main_tests.addIncludePath(b.path("duckdb/third_party/re2"));
+
+    // our c bridge
+    main_tests.addIncludePath(b.path("src/include"));
+    // our c++ bridge
+    main_tests.addCSourceFile(.{ .file = b.path("src/bridge.cpp") });
+
+    main_tests.linkLibC();
+    // https://github.com/ziglang/zig/blob/e1ca6946bee3acf9cbdf6e5ea30fa2d55304365d/build.zig#L369-L373
+    main_tests.linkSystemLibrary("c++");
+
+    main_tests.linkSystemLibrary("duckdb");
+    main_tests.addLibraryPath(b.path("lib"));
+
     const run_main_tests = b.addRunArtifact(main_tests);
 
     // This creates a build step. It will be visible in the `zig build --help` menu,

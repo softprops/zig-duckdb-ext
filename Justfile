@@ -10,4 +10,4 @@ build: #fetch-libduckdb
     @zig build -freference-trace 
 
 test: build
-    @duckdb -unsigned -s "LOAD 'zig-out/lib/quack.duckdb_extension'; FROM quack(times = 1)"
+    @duckdb -unsigned -s "LOAD 'zig-out/lib/quack.duckdb_extension'; FROM quack(times = 5)"

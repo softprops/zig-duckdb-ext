@@ -3,7 +3,8 @@ pub const bridge = @cImport({
     @cInclude("bridge.hpp");
 });
 
-pub const c = @cImport(@cInclude("duckdb.h"));
+// https://duckdb.org/docs/api/c/api.html
+const c = @cImport(@cInclude("duckdb.h"));
 
 pub const LogicalType = enum {
     // todo: add other types
@@ -117,18 +118,26 @@ pub const TableFunc = struct {
     ptr: c.duckdb_table_function,
     allocator: std.mem.Allocator,
     fn create(alloc: std.mem.Allocator) @This() {
-        return .{ .ptr = c.duckdb_create_table_function(), .allocator = alloc };
+        return .{
+            .ptr = c.duckdb_create_table_function(),
+            .allocator = alloc,
+        };
     }
 
     fn deinit(self: *@This()) void {
-        c.duckdb_destroy_table_function(@ptrCast(@alignCast(self.ptr)));
+        c.duckdb_destroy_table_function(
+            @ptrCast(@alignCast(self.ptr)),
+        );
     }
 
     fn setName(
         self: *@This(),
         name: [*c]const u8,
     ) *@This() {
-        c.duckdb_table_function_set_name(self.ptr, name);
+        c.duckdb_table_function_set_name(
+            self.ptr,
+            name,
+        );
         return self;
     }
 
@@ -136,7 +145,10 @@ pub const TableFunc = struct {
         self: *@This(),
         supports: bool,
     ) *@This() {
-        c.duckdb_table_function_supports_projection_pushdown(self.ptr, supports);
+        c.duckdb_table_function_supports_projection_pushdown(
+            self.ptr,
+            supports,
+        );
         return self;
     }
 
@@ -145,7 +157,10 @@ pub const TableFunc = struct {
         params: []const LogicalType,
     ) *@This() {
         for (params) |p| {
-            c.duckdb_table_function_add_parameter(self.ptr, p.toInternal());
+            c.duckdb_table_function_add_parameter(
+                self.ptr,
+                p.toInternal(),
+            );
         }
         return self;
     }
@@ -155,7 +170,11 @@ pub const TableFunc = struct {
         params: []const struct { [*c]const u8, LogicalType },
     ) *@This() {
         for (params) |p| {
-            c.duckdb_table_function_add_named_parameter(self.ptr, p[0], p[1].toInternal());
+            c.duckdb_table_function_add_named_parameter(
+                self.ptr,
+                p[0],
+                p[1].toInternal(),
+            );
         }
         return self;
     }
@@ -194,6 +213,7 @@ pub const TableFunc = struct {
 
 export fn deinit_data(data: ?*anyopaque) callconv(.C) void {
     // todo check for std.meta.hasFn(T, "deinit") and call it
+    if (std.meta.hasFn(@TypeOf(data), "deinit")) {}
     c.duckdb_free(data);
 }
 
@@ -265,6 +285,13 @@ export fn quack_version_zig() [*c]const u8 {
     return duckdbVersion();
 }
 
+test quack_version_zig {
+    try std.testing.expectEqualStrings(
+        "v0.9.2",
+        std.mem.sliceTo(quack_version_zig(), 0),
+    );
+}
+
 /// called by duckdb on LOAD path/to/xxx.duckdb_extension
 export fn quack_init_zig(db: *anyopaque) void {
     std.log.debug("initializing ext...", .{});
@@ -284,13 +311,11 @@ export fn quack_init_zig(db: *anyopaque) void {
             .bind(BindData, bindFn)
             .init(InitData, initFn)
             .func(InitData, BindData, funcFn)
-            .setSupportsProjectionPushDown(false)
             .addNamedParameters(
             &[_]struct { [*c]const u8, LogicalType }{
                 .{ "times", .int },
             },
         ),
-        //.addParameters(&[_]LogicalType{.varchar}),
     )) {
         std.debug.print("error registering duckdb table func\n", .{});
         return;
@@ -321,7 +346,7 @@ fn funcFn(chunk: *DataChunk, initData: *InitData, bindData: *BindData) anyerror!
         const allocator = gpa.allocator();
 
         initData.done = true;
-        const s = "quack";
+        const s = " 🐥";
         const repeated = try allocator.alloc(u8, s.len * bindData.times);
         var i: usize = 0;
         while (i < s.len * bindData.times) : (i += 1) {
@@ -329,8 +354,8 @@ fn funcFn(chunk: *DataChunk, initData: *InitData, bindData: *BindData) anyerror!
         }
         defer allocator.free(repeated);
 
-        std.debug.print("returning {any}\n", .{repeated});
-        chunk.vector(0).assignStringElement(0, repeated);
+        std.debug.print("returning {s}\n", .{repeated});
+        chunk.vector(0).assignStringElement(0, s);
         chunk.setSize(1);
     }
 }
