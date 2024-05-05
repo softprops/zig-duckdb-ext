@@ -249,7 +249,9 @@ pub const TableFunctionRef = struct {
 /// A TableFunction type can generate new table function instances via the `create()` fn which can then be
 /// registered with a DuckDB connection for use
 pub fn TableFunction(
+    /// an instance of this type will be allocated when initFunc is invoked
     comptime IData: type,
+    /// an instance of this type will be allocated when bindFunc is invoked
     comptime BData: type,
     initFunc: fn (*InitInfo, *IData) anyerror!void,
     bindFunc: fn (*BindInfo, *BData) anyerror!void,

@@ -73,7 +73,7 @@ fn bind(
     info: *duckdbext.BindInfo,
     data: *BindData,
 ) !void {
-    info.addResultColumn("column0", .varchar);
+    info.addResultColumn("quacks", .varchar);
 
     var times = info.getNamedParameter("times").?;
     defer times.deinit();
