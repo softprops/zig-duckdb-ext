@@ -95,6 +95,7 @@ fn funcFn(
 ) anyerror!void {
     if (initData.done) {
         chunk.setSize(0);
+        return;
     }
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
