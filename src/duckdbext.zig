@@ -172,6 +172,8 @@ pub const Vector = struct {
         return .{ .ptr = vec };
     }
 
+    /// Assigns a string element in the vector at the specified location.
+    /// Note: the provided string should be null terminiated
     pub fn assignStringElement(
         self: @This(),
         index: u64,
