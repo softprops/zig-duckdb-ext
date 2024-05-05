@@ -4,6 +4,8 @@ const std = @import("std");
 // https://duckdb.org/docs/api/c/api.html
 const c = @cImport(@cInclude("duckdb.h"));
 
+/// Logical types describe the possible types which may be used in parameters
+/// in DuckDB
 pub const LogicalType = enum(c.enum_DUCKDB_TYPE) {
     bool = c.DUCKDB_TYPE_BOOLEAN,
     tinyint = c.DUCKDB_TYPE_TINYINT,
@@ -83,6 +85,7 @@ pub const BindInfo = struct {
         );
     }
 
+    /// Get an indexed parameter's value if any exists at this index for this binding
     pub fn getParameter(
         self: *@This(),
         idx: u64,
@@ -94,6 +97,7 @@ pub const BindInfo = struct {
         return Value.init(param);
     }
 
+    /// Get a named parameter's value if any for this binding
     pub fn getNamedParameter(
         self: @This(),
         name: [*:0]const u8,
@@ -189,7 +193,8 @@ pub const Connection = struct {
         self.allocator.destroy(self.ptr);
     }
 
-    /// register a new table function with this connection
+    /// Registers a new table function with this connection. Returns false if this registration attempt
+    /// fails
     pub fn registerTableFunction(self: *@This(), func: TableFunctionRef) bool {
         if (c.duckdb_register_table_function(self.ptr.*, func.ptr) == c.DuckDBError) {
             std.debug.print("error registering duckdb table func\n", .{});
@@ -205,16 +210,20 @@ export fn deinit_data(data: ?*anyopaque) callconv(.C) void {
     c.duckdb_free(data);
 }
 
+/// Returns the DuckDB version this build is linked to
 pub fn duckdbVersion() [*:0]const u8 {
     return c.duckdb_library_version();
 }
 
+/// A tuple type used to declare TableFunction named parameters
 pub const NamedParameter = struct { [*:0]const u8, LogicalType };
 
 pub const TableFunctionRef = struct {
     ptr: c.duckdb_table_function,
 };
 
+/// A TableFunction type can generate new table function instances via the `create()` fn which can then be
+/// registered with a DuckDB connection for use
 pub fn TableFunction(
     comptime IData: type,
     comptime BData: type,

@@ -101,16 +101,20 @@ fn funcFn(
         const allocator = gpa.allocator();
 
         initData.done = true;
-        const s = " 🐥";
-        const repeated = try allocator.alloc(u8, s.len * bindData.times);
-        var i: usize = 0;
-        while (i < s.len * bindData.times) : (i += 1) {
-            repeated[i] = s[i % s.len];
-        }
+        const repeated = try repeat(allocator, " 🐥", bindData.times);
         defer allocator.free(repeated);
 
         std.debug.print("returning {s}\n", .{repeated});
         chunk.vector(0).assignStringElement(0, repeated);
         chunk.setSize(1);
     }
+}
+
+fn repeat(allocator: std.mem.Allocator, str: []const u8, times: usize) ![]const u8 {
+    const repeated = try allocator.allocSentinel(u8, str.len * times, 0);
+    var i: usize = 0;
+    while (i < str.len * times) : (i += 1) {
+        repeated[i] = str[i % str.len];
+    }
+    return repeated;
 }
