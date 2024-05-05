@@ -15,8 +15,9 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
+    const name = "quack";
     const lib = b.addSharedLibrary(.{
-        .name = "quack",
+        .name = name,
         // In this case the main source file is merely a path, however, in more
         // complicated build scripts, this could be a generated file.
         .root_source_file = b.path("src/main.zig"),
@@ -52,7 +53,7 @@ pub fn build(b: *std.Build) void {
         &b.addInstallArtifact(
             lib,
             .{
-                .dest_sub_path = "quack.duckdb_extension",
+                .dest_sub_path = name ++ ".duckdb_extension",
             },
         ).step,
     );
