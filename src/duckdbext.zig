@@ -37,8 +37,18 @@ pub const LogicalType = enum(c.enum_DUCKDB_TYPE) {
     @"union" = c.DUCKDB_TYPE_UNION,
     bit = c.DUCKDB_TYPE_BIT,
 
-    fn toInternal(self: @This()) c.duckdb_logical_type {
-        return c.duckdb_create_logical_type(@intFromEnum(self));
+    const Ref = struct {
+        ptr: c.duckdb_logical_type,
+        fn deinit(self: *@This()) void {
+            c.duckdb_destroy_logical_type(&self.ptr);
+        }
+    };
+
+    fn toInternal(self: @This()) Ref {
+        // Creates a duckdb_logical_type from a standard primitive type.
+        // todo: The resulting type should be destroyed with duckdb_destroy_logical_type.
+        // todo: This should not be used with DUCKDB_TYPE_DECIMAL.
+        return .{ .ptr = c.duckdb_create_logical_type(@intFromEnum(self)) };
     }
 };
 
@@ -47,11 +57,15 @@ pub const Value = struct {
     fn init(val: c.duckdb_value) @This() {
         return .{ .val = val };
     }
+
+    // todo: This must be destroyed with duckdb_free.
+    /// Obtains a string representation of the given value
     pub fn toString(self: *@This()) [*:0]u8 {
         return c.duckdb_get_varchar(self.val);
     }
 
-    pub fn toI64(self: *@This()) i64 {
+    /// Obtains an int64 of the given value.
+    pub fn toI64(self: *@This()) ?i64 {
         return c.duckdb_get_int64(self.val);
     }
 
@@ -73,15 +87,18 @@ pub const BindInfo = struct {
         return .{ .ptr = info };
     }
 
+    /// Adds a result column to the output of the table function.
     pub fn addResultColumn(
         self: *@This(),
         name: [*:0]const u8,
         lType: LogicalType,
     ) void {
+        var typeRef = lType.toInternal();
+        defer typeRef.deinit();
         c.duckdb_bind_add_result_column(
             self.ptr,
             name,
-            lType.toInternal(),
+            typeRef.ptr,
         );
     }
 
@@ -97,7 +114,8 @@ pub const BindInfo = struct {
         return Value.init(param);
     }
 
-    /// Get a named parameter's value if any for this binding
+    /// Retrieves the parameter value at the given index.
+    /// The result must be destroyed with Value.deinit().
     pub fn getNamedParameter(
         self: @This(),
         name: [*:0]const u8,
@@ -109,6 +127,7 @@ pub const BindInfo = struct {
         return Value.init(param);
     }
 
+    /// Retrieves the number of regular (non-named) parameters to the function
     pub fn getParameterCount(self: @This()) u64 {
         return c.duckdb_bind_get_parameter_count(self.ptr);
     }
@@ -206,7 +225,10 @@ pub const Connection = struct {
 
 export fn deinit_data(data: ?*anyopaque) callconv(.C) void {
     // todo check for std.meta.hasFn(T, "deinit") and call it
-    if (std.meta.hasFn(@TypeOf(data), "deinit")) {}
+    if (std.meta.hasFn(@TypeOf(data), "deinit")) {
+        var d: @TypeOf(data) = @ptrCast(data);
+        d.deinit();
+    }
     c.duckdb_free(data);
 }
 
@@ -245,8 +267,16 @@ pub fn TableFunction(
             c.duckdb_table_function_set_bind(tf, bind);
             c.duckdb_table_function_set_init(tf, init);
             c.duckdb_table_function_set_function(tf, func);
-            for (self.parameters) |p| c.duckdb_table_function_add_parameter(tf, p.toInternal());
-            for (self.named_parameters) |p| c.duckdb_table_function_add_named_parameter(tf, p[0], p[1].toInternal());
+            for (self.parameters) |p| {
+                var typeRef = p.toInternal();
+                defer typeRef.deinit();
+                c.duckdb_table_function_add_parameter(tf, typeRef.ptr);
+            }
+            for (self.named_parameters) |p| {
+                var typeRef = p[1].toInternal();
+                defer typeRef.deinit();
+                c.duckdb_table_function_add_named_parameter(tf, p[0], typeRef.ptr);
+            }
             return .{ .ptr = tf };
         }
 

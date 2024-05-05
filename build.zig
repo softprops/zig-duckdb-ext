@@ -15,6 +15,10 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
+    _ = b.addModule("duckdb_ext", .{
+        .root_source_file = b.path("src/duckdbext.zig"),
+    });
+
     const name = "quack";
     const lib = b.addSharedLibrary(.{
         .name = name,

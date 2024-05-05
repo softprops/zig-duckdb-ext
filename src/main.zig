@@ -3,12 +3,16 @@ const duckdbext = @import("duckdbext.zig");
 
 const InitData = struct {
     done: bool,
-    fn deinit(_: *@This()) void {}
+    fn deinit(self: *@This()) void {
+        std.debug.print("deinit init data... {any}", .{self});
+    }
 };
 
 const BindData = struct {
     times: usize,
-    fn deinit(_: *@This()) void {}
+    fn deinit(self: *@This()) void {
+        std.debug.print("deinit bind data... {any}", .{self});
+    }
 };
 
 /// called by duckdb on LOAD path/to/xxx.duckdb_extension and used to verify this plugin is compatible
@@ -46,9 +50,9 @@ export fn quack_init_zig(db: *anyopaque) void {
     var table_func = duckdbext.TableFunction(
         InitData,
         BindData,
-        initFn,
-        bindFn,
-        funcFn,
+        init,
+        bind,
+        func,
     ){
         .name = "quack",
         .named_parameters = &[_]duckdbext.NamedParameter{
@@ -65,7 +69,7 @@ export fn quack_init_zig(db: *anyopaque) void {
 
 // impls
 
-fn bindFn(
+fn bind(
     info: *duckdbext.BindInfo,
     data: *BindData,
 ) anyerror!void {
@@ -81,14 +85,14 @@ fn bindFn(
     );
 }
 
-fn initFn(
+fn init(
     _: *duckdbext.InitInfo,
     data: *InitData,
 ) anyerror!void {
     data.done = false;
 }
 
-fn funcFn(
+fn func(
     chunk: *duckdbext.DataChunk,
     initData: *InitData,
     bindData: *BindData,
