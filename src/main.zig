@@ -95,18 +95,18 @@ fn funcFn(
 ) anyerror!void {
     if (initData.done) {
         chunk.setSize(0);
-    } else {
-        var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-        defer _ = gpa.deinit();
-        const allocator = gpa.allocator();
-
-        initData.done = true;
-        const repeated = try repeat(allocator, " 🐥", bindData.times);
-        defer allocator.free(repeated);
-
-        chunk.vector(0).assignStringElement(0, repeated);
-        chunk.setSize(1);
     }
+
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    initData.done = true;
+    const repeated = try repeat(allocator, " 🐥", bindData.times);
+    defer allocator.free(repeated);
+
+    chunk.vector(0).assignStringElement(0, repeated);
+    chunk.setSize(1);
 }
 
 fn repeat(allocator: std.mem.Allocator, str: []const u8, times: usize) ![:0]const u8 {
