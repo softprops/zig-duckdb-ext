@@ -72,7 +72,7 @@ export fn quack_init_zig(db: *anyopaque) void {
 fn bind(
     info: *duckdbext.BindInfo,
     data: *BindData,
-) anyerror!void {
+) !void {
     info.addResultColumn("column0", .varchar);
 
     var times = info.getNamedParameter("times").?;
@@ -88,7 +88,7 @@ fn bind(
 fn init(
     _: *duckdbext.InitInfo,
     data: *InitData,
-) anyerror!void {
+) !void {
     data.done = false;
 }
 
@@ -96,7 +96,7 @@ fn func(
     chunk: *duckdbext.DataChunk,
     initData: *InitData,
     bindData: *BindData,
-) anyerror!void {
+) !void {
     if (initData.done) {
         chunk.setSize(0);
         return;
