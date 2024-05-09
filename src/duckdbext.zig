@@ -4,6 +4,50 @@ const std = @import("std");
 // https://duckdb.org/docs/api/c/api.html
 const c = @cImport(@cInclude("duckdb.h"));
 
+/// A simple DB interface intended for use with testing extensions
+/// see https://duckdb.org/docs/connect/overview.html#in-memory-database for more info on in memory databases
+pub const DB = struct {
+    allocator: ?std.mem.Allocator,
+    ptr: *c.duckdb_database,
+
+    /// wrap db provided by duckdb runtime
+    pub fn provided(ptr: *c.duckdb_database) @This() {
+        return .{ .ptr = ptr, .allocator = null };
+    }
+
+    pub fn memory(allocator: std.mem.Allocator) !@This() {
+        const config = try allocator.create(c.duckdb_config);
+        defer allocator.destroy(config);
+        if (c.duckdb_create_config(config) == c.DuckDBError) {
+            return error.ConfigError;
+        }
+
+        const db = try allocator.create(c.duckdb_database);
+        errdefer allocator.destroy(db);
+        var open_err: [*c]u8 = undefined;
+        if (c.duckdb_open_ext(":memory:", db, config.*, &open_err) == c.DuckDBError) {
+            std.debug.print("error opening db: {s}\n", .{open_err});
+            defer c.duckdb_free(open_err);
+            return error.OpenError;
+        }
+
+        return .{ .ptr = db, .allocator = allocator };
+    }
+
+    /// extensions will be passed in a database as anyopaque value
+    /// use this to faciliate that.
+    pub fn toOpaque(self: *@This()) *anyopaque {
+        return @as(*anyopaque, @ptrCast(self.ptr));
+    }
+
+    pub fn deinit(self: *@This()) void {
+        if (self.allocator) |alloc| {
+            c.duckdb_close(self.ptr);
+            alloc.destroy(self.ptr);
+        }
+    }
+};
+
 /// Logical types describe the possible types which may be used in parameters
 /// in DuckDB
 pub const LogicalType = enum(c.enum_DUCKDB_TYPE) {
@@ -43,6 +87,10 @@ pub const LogicalType = enum(c.enum_DUCKDB_TYPE) {
             c.duckdb_destroy_logical_type(&self.ptr);
         }
     };
+
+    fn from(tpe: c.duckdb_type) LogicalType {
+        return @enumFromInt(tpe);
+    }
 
     fn toInternal(self: @This()) Ref {
         // Creates a duckdb_logical_type from a standard primitive type.
@@ -195,16 +243,18 @@ pub const Connection = struct {
     /// Returns an an active duckdb database connection
     pub fn init(
         allocator: std.mem.Allocator,
-        db: c.duckdb_database,
+        db: DB,
     ) !@This() {
         const con: *c.duckdb_connection = try allocator.create(
             c.duckdb_connection,
         );
+        // if we fail to connect to the db, make sure we release the connection memory
+        errdefer allocator.destroy(con);
         if (c.duckdb_connect(
-            @ptrCast(@alignCast(db)),
+            db.ptr.*,
             con,
         ) == c.DuckDBError) {
-            std.debug.print("error connecting to duckdb", .{});
+            std.debug.print("error connecting to duckdb\n", .{});
             return error.ConnectionError;
         }
         return .{ .ptr = con, .allocator = allocator };

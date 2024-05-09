@@ -37,16 +37,21 @@ export fn quack_init_zig(db: *anyopaque) void {
 
     var conn = duckdbext.Connection.init(
         allocator,
-        @ptrCast(@alignCast(db)),
+        duckdbext.DB.provided(@ptrCast(@alignCast(db))),
     ) catch |e| {
         std.debug.print(
-            "error connecting to duckdb {any}",
+            "error connecting to duckdb {any}\n",
             .{e},
         );
-        return;
+        @panic("error connecting to duckdb");
     };
     defer conn.deinit();
 
+    quack_init(&conn);
+}
+
+// split for test injection
+fn quack_init(conn: *duckdbext.Connection) void {
     var table_func = duckdbext.TableFunction(
         InitData,
         BindData,
@@ -60,11 +65,32 @@ export fn quack_init_zig(db: *anyopaque) void {
         },
     };
 
-    //var table_func = TableFunc.create(allocator);
     if (!conn.registerTableFunction(table_func.create())) {
         std.debug.print("error registering duckdb table func\n", .{});
         return;
     }
+}
+
+test quack_init {
+    const allocator = std.testing.allocator;
+
+    var db = try duckdbext.DB.memory(allocator);
+    defer db.deinit();
+
+    var conn = duckdbext.Connection.init(
+        allocator,
+        db,
+    ) catch |e| {
+        std.debug.print(
+            "error connecting to duckdb {any}\n",
+            .{e},
+        );
+        @panic("error connecting to duckdb");
+    };
+    defer conn.deinit();
+
+    quack_init(&conn);
+    // todo exec test query
 }
 
 // impls
