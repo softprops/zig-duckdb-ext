@@ -15,4 +15,6 @@ duck backpack by Vectors Market from <a href="https://thenounproject.com/browse/
 
 ---
 
+The zig analog to the [c++ extension template](https://github.com/duckdb/extension-template)
+
 \- softprops 2024
