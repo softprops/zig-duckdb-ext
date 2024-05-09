@@ -275,14 +275,19 @@ pub const Connection = struct {
     }
 };
 
-export fn deinit_data(data: ?*anyopaque) callconv(.C) void {
-    // todo check for std.meta.hasFn(T, "deinit") and call it
-    if (std.meta.hasFn(@TypeOf(data), "deinit")) {
-        var d: @TypeOf(data) = @ptrCast(data);
-        d.deinit();
-    }
-    c.duckdb_free(data);
+fn DeinitData(comptime T: type) type {
+    return struct {
+        fn deinit(data: ?*anyopaque) callconv(.C) void {
+            if (std.meta.hasFn(T, "deinit")) {
+                var typed: *T = @ptrCast(@alignCast(data));
+                typed.deinit();
+            }
+            c.duckdb_free(data);
+        }
+    };
 }
+
+test DeinitData {}
 
 /// Returns the DuckDB version this build is linked to
 pub fn duckdbVersion() [*:0]const u8 {
@@ -299,9 +304,13 @@ pub const TableFunctionRef = struct {
 /// A TableFunction type can generate new table function instances via the `create()` fn which can then be
 /// registered with a DuckDB connection for use
 pub fn TableFunction(
-    /// an instance of this type will be allocated when initFunc is invoked
+    /// an instance of this type will be allocated when initFunc is invoked.
+    ///
+    /// if a method of type deinit is defined on this type it will be called by the duckdb runtime
     comptime IData: type,
     /// an instance of this type will be allocated when bindFunc is invoked
+    ///
+    /// if a method of type deinit is defined on this type it will be called by the duckdb runtime
     comptime BData: type,
     initFunc: fn (*InitInfo, *IData) anyerror!void,
     bindFunc: fn (*BindInfo, *BData) anyerror!void,
@@ -336,7 +345,7 @@ pub fn TableFunction(
 
         // c apis
 
-        export fn init(info: c.duckdb_init_info) callconv(.C) void {
+        fn init(info: c.duckdb_init_info) callconv(.C) void {
             std.log.debug("init called...", .{});
             var initInfo = InitInfo.init(info);
             const data: *IData = @ptrCast(@alignCast(c.duckdb_malloc(@sizeOf(IData))));
@@ -344,23 +353,23 @@ pub fn TableFunction(
                 std.debug.print("error initializing {any}", .{e});
             };
 
-            c.duckdb_init_set_init_data(info, data, deinit_data);
+            c.duckdb_init_set_init_data(info, data, DeinitData(IData).deinit);
         }
 
-        export fn bind(info: c.duckdb_bind_info) callconv(.C) void {
+        fn bind(info: c.duckdb_bind_info) callconv(.C) void {
             std.log.debug("bind called...", .{});
             var bindInfo = BindInfo.init(info);
             const data: *BData = @ptrCast(@alignCast(c.duckdb_malloc(@sizeOf(BData))));
 
             const result = bindFunc(&bindInfo, data);
 
-            c.duckdb_bind_set_bind_data(info, data, deinit_data);
+            c.duckdb_bind_set_bind_data(info, data, DeinitData(BData).deinit);
             result catch {
                 bindInfo.setErr("error binding data");
             };
         }
 
-        export fn func(info: c.duckdb_function_info, output: c.duckdb_data_chunk) callconv(.C) void {
+        fn func(info: c.duckdb_function_info, output: c.duckdb_data_chunk) callconv(.C) void {
             std.log.debug("func called...", .{});
             const initData: *IData = @ptrCast(@alignCast(c.duckdb_function_get_init_data(info)));
             const bindData: *BData = @ptrCast(@alignCast(c.duckdb_function_get_bind_data(info)));

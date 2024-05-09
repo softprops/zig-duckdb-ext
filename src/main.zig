@@ -3,16 +3,10 @@ const duckdbext = @import("duckdbext.zig");
 
 const InitData = struct {
     done: bool,
-    fn deinit(self: *@This()) void {
-        std.debug.print("deinit init data... {any}", .{self});
-    }
 };
 
 const BindData = struct {
     times: usize,
-    fn deinit(self: *@This()) void {
-        std.debug.print("deinit bind data... {any}", .{self});
-    }
 };
 
 /// called by duckdb on LOAD path/to/xxx.duckdb_extension and used to verify this plugin is compatible
