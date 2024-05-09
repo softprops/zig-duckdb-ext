@@ -1,4 +1,5 @@
 bootstrap:
+    # git clone -b v0.9.2 --single-branch https://github.com/duckdb/duckdb.git
     @git submodule update --init --recursive
 
 fetch-libduckdb:
