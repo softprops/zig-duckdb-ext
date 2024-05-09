@@ -1,7 +1,7 @@
-<h1 align="center"> duckdb ext </h1>
+<h1 align="center">duckdb ext </h1>
 
 <p align="center">
-🐥 a duckdb extension library for zig
+🐥 a <a href="https://duckdb.org/">DuckDB</a> extension library for zig
 </p>
 
 <p align="center">
