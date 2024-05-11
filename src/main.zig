@@ -11,7 +11,6 @@ const BindData = struct {
 
 /// called by c++ bridge when loading ext
 export fn quack_version_zig() [*:0]const u8 {
-    std.debug.print("returning version {s}", .{duckdbext.duckdbVersion()});
     return duckdbext.duckdbVersion();
 }
 
