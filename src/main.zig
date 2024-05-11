@@ -9,9 +9,9 @@ const BindData = struct {
     times: usize,
 };
 
-/// called by duckdb on LOAD path/to/xxx.duckdb_extension and used to verify this plugin is compatible
-/// with the local duckdb version
+/// called by c++ bridge when loading ext
 export fn quack_version_zig() [*:0]const u8 {
+    std.debug.print("returning version {s}", .{duckdbext.duckdbVersion()});
     return duckdbext.duckdbVersion();
 }
 
@@ -22,7 +22,7 @@ test quack_version_zig {
     );
 }
 
-/// called by duckdb on LOAD path/to/xxx.duckdb_extension
+/// called by c++ bridge when loading ext
 export fn quack_init_zig(db: *anyopaque) void {
     std.log.debug("initializing ext...", .{});
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};

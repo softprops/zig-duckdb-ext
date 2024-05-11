@@ -4,7 +4,6 @@
 #include "duckdb.hpp"
 
 extern "C" {
-// exposed so zig call call into bridge
 DUCKDB_EXTENSION_API char const *quack_version();
 DUCKDB_EXTENSION_API void quack_init(duckdb::DatabaseInstance &db);
 }

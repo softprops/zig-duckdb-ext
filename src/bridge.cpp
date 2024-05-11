@@ -6,13 +6,18 @@
 
 extern "C" {
 
+// implemented in zig
 void quack_init_zig(void *db);
+
+// implemented in zig
 const char *quack_version_zig(void);
 
+// called by duckdb cli using the convention {extension_name}_init(db)
 DUCKDB_EXTENSION_API void quack_init(duckdb::DatabaseInstance &db) {
 	quack_init_zig((void *)&db);
 }
 
+// called by duckdb cli using the convention {extension_name}_version()
 DUCKDB_EXTENSION_API const char *quack_version() {
 	return quack_version_zig();
 }
