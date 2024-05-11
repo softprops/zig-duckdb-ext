@@ -3,6 +3,7 @@ ddb_version := "0.10.2"
 update-ddb:
     @cd duckdb && git checkout v{{ddb_version}}
 bootstrap:
+    # git submodule add -b main --name duckdb https://github.com/duckdb/duckdb
     # git clone -b v{{ddb_version}} --single-branch https://github.com/duckdb/duckdb.git
     @git submodule update --init --recursive
 
