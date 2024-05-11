@@ -24,6 +24,9 @@ build: #fetch-libduckdb
 # 4. {extension_version} (git ref|duckdb_version|custom)
 append-metadata:
     @echo "todo: append ddb metadata to ext file"
+    # hackmode: metadata-bytes plucked from motherduck ext
+    # tail -c 512 ~/.duckdb/extensions/v0.10.2/osx_arm64/motherduck.duckdb_extension > metadata-bytes
+    @cat metadata-bytes >> zig-out/lib/quack.duckdb_extension 
 
 test: build append-metadata
     @duckdb -unsigned -s "LOAD './zig-out/lib/quack.duckdb_extension'; FROM quack(times = 5)"
