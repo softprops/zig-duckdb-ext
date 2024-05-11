@@ -312,8 +312,11 @@ pub fn TableFunction(
     ///
     /// if a method of type deinit is defined on this type it will be called by the duckdb runtime
     comptime BData: type,
+    /// intialization function impl
     initFunc: fn (*InitInfo, *IData) anyerror!void,
+    /// bind function impl
     bindFunc: fn (*BindInfo, *BData) anyerror!void,
+    /// excecution function impl
     funcFunc: fn (*DataChunk, *IData, *BData) anyerror!void,
 ) type {
     return struct {
