@@ -1,4 +1,5 @@
 const std = @import("std");
+const duckdb = @import("duckdb.build.zig");
 
 // Although this function looks imperative, note that its job is to
 // declaratively construct a build graph that will be executed by an external
@@ -53,14 +54,22 @@ pub fn build(b: *std.Build) void {
     // running `zig build`).
     //b.installArtifact(lib);
 
-    b.getInstallStep().dependOn(
-        &b.addInstallArtifact(
+    //b.getInstallStep().dependOn(&b.addInstallArtifact(
+    //     lib,
+    //     .{
+    //         .dest_sub_path = name ++ ".duckdb_extension",
+    //     },
+    // ).step);
+    b.getInstallStep().dependOn(&duckdb.appendMetadata(
+        b,
+        b.addInstallArtifact(
             lib,
             .{
                 .dest_sub_path = name ++ ".duckdb_extension",
             },
-        ).step,
-    );
+        ),
+        .{ .platform = "osx_arm64" },
+    ).step);
 
     // Creates a step for unit testing. This only builds the test executable
     // but does not run it.
@@ -76,6 +85,7 @@ pub fn build(b: *std.Build) void {
 
     // our c bridge
     main_tests.addIncludePath(b.path("src/include"));
+
     // our c++ bridge
     main_tests.addCSourceFile(.{ .file = b.path("src/bridge.cpp") });
 
