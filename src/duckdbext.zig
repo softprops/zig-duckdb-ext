@@ -127,6 +127,10 @@ pub const InitInfo = struct {
     fn init(info: c.duckdb_init_info) @This() {
         return .{ .ptr = info };
     }
+
+    pub fn setErr(self: *@This(), err: [*:0]const u8) void {
+        c.duckdb_init_set_error(self.ptr, err);
+    }
 };
 
 pub const BindInfo = struct {
@@ -148,6 +152,14 @@ pub const BindInfo = struct {
             name,
             typeRef.ptr,
         );
+    }
+
+    pub fn setCardinality(
+        self: *@This(),
+        cardinality: u64,
+        exact: bool,
+    ) void {
+        c.duckdb_bind_set_cardinality(self.ptr, cardinality, exact);
     }
 
     /// Get an indexed parameter's value if any exists at this index for this binding
@@ -181,7 +193,7 @@ pub const BindInfo = struct {
     }
 
     pub fn setErr(self: *@This(), err: [*:0]const u8) void {
-        c.duckdb_init_set_error(self.ptr, err);
+        c.duckdb_bind_set_error(self.ptr, err);
     }
 };
 
@@ -287,8 +299,6 @@ fn DeinitData(comptime T: type) type {
     };
 }
 
-test DeinitData {}
-
 /// Returns the DuckDB version this build is linked to
 pub fn duckdbVersion() [*:0]const u8 {
     return c.duckdb_library_version();
@@ -354,6 +364,7 @@ pub fn TableFunction(
             const data: *IData = @ptrCast(@alignCast(c.duckdb_malloc(@sizeOf(IData))));
             initFunc(&initInfo, data) catch |e| {
                 std.debug.print("error initializing {any}", .{e});
+                initInfo.setErr("error initing data");
             };
 
             c.duckdb_init_set_init_data(info, data, DeinitData(IData).deinit);

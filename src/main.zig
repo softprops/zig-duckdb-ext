@@ -94,9 +94,11 @@ fn bind(
 ) !void {
     info.addResultColumn("quacks", .varchar);
 
-    var times = info.getNamedParameter("times").?;
+    var times = info.getNamedParameter("times") orelse {
+        info.setErr("times parameter required");
+        return;
+    };
     defer times.deinit();
-
     data.times = try std.fmt.parseInt(
         usize,
         std.mem.sliceTo(times.toString(), 0),
