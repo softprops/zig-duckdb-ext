@@ -337,23 +337,23 @@ pub fn TableFunction(
 
         /// creates a new underlying table function reference
         pub fn create(self: *@This()) TableFunctionRef {
-            const tf = c.duckdb_create_table_function();
-            c.duckdb_table_function_set_name(tf, self.name);
-            c.duckdb_table_function_supports_projection_pushdown(tf, self.supports_projection_pushdown);
-            c.duckdb_table_function_set_bind(tf, bind);
-            c.duckdb_table_function_set_init(tf, init);
-            c.duckdb_table_function_set_function(tf, func);
+            const ptr = c.duckdb_create_table_function();
+            c.duckdb_table_function_set_name(ptr, self.name);
+            c.duckdb_table_function_supports_projection_pushdown(ptr, self.supports_projection_pushdown);
+            c.duckdb_table_function_set_bind(ptr, bind);
+            c.duckdb_table_function_set_init(ptr, init);
+            c.duckdb_table_function_set_function(ptr, func);
             for (self.parameters) |p| {
                 var typeRef = p.toInternal();
                 defer typeRef.deinit();
-                c.duckdb_table_function_add_parameter(tf, typeRef.ptr);
+                c.duckdb_table_function_add_parameter(ptr, typeRef.ptr);
             }
             for (self.named_parameters) |p| {
                 var typeRef = p[1].toInternal();
                 defer typeRef.deinit();
-                c.duckdb_table_function_add_named_parameter(tf, p[0], typeRef.ptr);
+                c.duckdb_table_function_add_named_parameter(ptr, p[0], typeRef.ptr);
             }
-            return .{ .ptr = tf };
+            return .{ .ptr = ptr };
         }
 
         // c apis
