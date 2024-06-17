@@ -16,7 +16,7 @@ export fn quack_version_zig() [*:0]const u8 {
 
 test quack_version_zig {
     try std.testing.expectEqualStrings(
-        "v0.9.2",
+        "v1.0.0",
         std.mem.sliceTo(quack_version_zig(), 0),
     );
 }
@@ -131,8 +131,10 @@ fn func(
     const repeated = try repeat(allocator, " 🐥", bindData.times);
     defer allocator.free(repeated);
 
-    chunk.vector(0).assignStringElement(0, repeated);
-    chunk.setSize(1);
+    for (0..10) |i| {
+        chunk.vector(i).assignStringElement(0, repeated);
+    }
+    chunk.setSize(10);
 }
 
 fn repeat(allocator: std.mem.Allocator, str: []const u8, times: usize) ![:0]const u8 {
